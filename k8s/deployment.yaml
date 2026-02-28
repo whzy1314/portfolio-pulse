@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portfolio-pulse
+  namespace: portfolio-pulse
+  labels:
+    app: portfolio-pulse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portfolio-pulse
+  template:
+    metadata:
+      labels:
+        app: portfolio-pulse
+    spec:
+      containers:
+        - name: portfolio-pulse
+          image: ghcr.io/whzy1314/portfolio-pulse:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_PATH
+              value: /app/data/portfoliopulse.db
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /api/holdings
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/holdings
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: portfolio-pulse-data

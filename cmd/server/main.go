@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"net/http"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,10 +17,17 @@ import (
 	"portfoliopulse/internal/store"
 )
 
+func envOr(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
 func main() {
 	var (
 		addr   = flag.String("addr", ":8080", "server listen address")
-		dbPath = flag.String("db", "./portfoliopulse.db", "sqlite database file")
+		dbPath = flag.String("db", envOr("DB_PATH", "./portfoliopulse.db"), "sqlite database file")
 	)
 	flag.Parse()
 

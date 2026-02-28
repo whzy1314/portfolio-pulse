@@ -8,6 +8,8 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -56,8 +58,31 @@ func NewServer(s store.Store, p PriceProvider, hub *realtime.Hub) *Server {
 	r.HandleFunc("/api/portfolio", server.handlePortfolioSnapshot).Methods(http.MethodGet)
 	r.HandleFunc("/ws", server.handleWebSocket).Methods(http.MethodGet)
 
+	// Serve React SPA (catch-all, must be last)
+	spa := spaHandler{staticPath: "web/dist", indexPath: "index.html"}
+	r.PathPrefix("/").Handler(spa)
+
 	server.router = r
 	return server
+}
+
+type spaHandler struct {
+	staticPath string
+	indexPath  string
+}
+
+func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := filepath.Join(h.staticPath, r.URL.Path)
+	fi, err := os.Stat(path)
+	if os.IsNotExist(err) || fi.IsDir() {
+		http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
+		return
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
 }
 
 func (s *Server) Handler() http.Handler {
