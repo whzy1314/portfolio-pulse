@@ -8,6 +8,7 @@ RUN npm run build
 
 # Stage 2: Build Go backend
 FROM golang:1.22-alpine AS backend
+RUN apk add --no-cache gcc musl-dev sqlite-dev
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
